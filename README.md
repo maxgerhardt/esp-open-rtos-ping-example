@@ -5,7 +5,7 @@ A simple example for how to ping a host using lwIP and esp-open-rtos
 
 ## lwIP configuratoin
 
-The `lwipopts.h` must be adapted to activate the following functions:
+The `lwipopts.h` (found [here](https://github.com/SuperHouse/esp-open-rtos/blob/master/lwip/include/lwipopts.h) in esp-open-rtos) must be adapted to activate the following functions:
 
 ```cpp
 #define LWIP_RAW                        1
