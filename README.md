@@ -35,9 +35,27 @@ Parameters such as the maximum receive timeout, the ID of the ICMP echo packet a
 #endif
 ```
 
+Also note that the granularity of the ping response time is derived from the FreeRTOS timer, which only has a certain resolution. This is wh `configTICK_RATE_HZ` was changed to `1000` to a allow a resolution of 1 millisecond.
+
 ## Demo 
 
 The demo connects to a WiFi network (define parameters in `main.c`) and pings `www.google.com`. It can also be configured to ping the gateway of the network.
+
+## Demo output
+
+```
+Connected
+Got DHCP IP: 192.168.1.135
+Got GW IP: 192.168.1.1
+Got Netmask: 255.255.255.0
+Pinging hostname www.google.com at IP 172.217.23.100
+good ping from 172.217.23.100 61 ms
+good ping from 172.217.23.100 126 ms
+good ping from 172.217.23.100 104 ms
+good ping from 172.217.23.100 53 ms
+good ping from 172.217.23.100 117 ms
+good ping from 172.217.23.100 91 ms
+```
 
 ## API 
 
