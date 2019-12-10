@@ -23,7 +23,4 @@ typedef struct {
 
 void ping_ip(ip_addr_t ping_addr, ping_result_t *res);
 
-/* returns -1 on DNS failure, 0 on "ping attempted" */
-int ping_hostname(const char *hostname, ping_result_t *res);
-
 #endif /* LWIP_PING_H */
