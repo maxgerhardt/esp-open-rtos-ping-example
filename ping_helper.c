@@ -37,35 +37,31 @@
 static u16_t ping_seq_num;
 
 /** Prepare a echo ICMP request */
-static void
-ping_prepare_echo( struct icmp_echo_hdr *iecho, u16_t len)
-{
-	size_t i;
-	size_t data_len = len - sizeof(struct icmp_echo_hdr);
+static void ping_prepare_echo(struct icmp_echo_hdr *iecho, u16_t len) {
+    size_t i;
+    size_t data_len = len - sizeof(struct icmp_echo_hdr);
 
-	ICMPH_TYPE_SET(iecho, ICMP_ECHO);
-	ICMPH_CODE_SET(iecho, 0);
-	iecho->chksum = 0;
-	iecho->id     = PING_ID;
-	iecho->seqno  = lwip_htons(++ping_seq_num);
+    ICMPH_TYPE_SET(iecho, ICMP_ECHO);
+    ICMPH_CODE_SET(iecho, 0);
+    iecho->chksum = 0;
+    iecho->id = PING_ID;
+    iecho->seqno = lwip_htons(++ping_seq_num);
 
-	/* fill the additional data buffer with some data */
-	for(i = 0; i < data_len; i++) {
-		((char*)iecho)[sizeof(struct icmp_echo_hdr) + i] = (char)i;
-	}
+    /* fill the additional data buffer with some data */
+    for (i = 0; i < data_len; i++) {
+        ((char*) iecho)[sizeof(struct icmp_echo_hdr) + i] = (char) i;
+    }
 
-	iecho->chksum = inet_chksum(iecho, len);
+    iecho->chksum = inet_chksum(iecho, len);
 }
 
 /* Ping using the socket ip */
-static err_t
-ping_send(int s, const ip_addr_t *addr)
-{
-	int err;
-	struct icmp_echo_hdr *iecho;
-	struct sockaddr_storage to;
-	size_t ping_size = sizeof(struct icmp_echo_hdr) + PING_DATA_SIZE;
-	LWIP_ASSERT("ping_size is too big", ping_size <= 0xffff);
+static err_t ping_send(int s, const ip_addr_t *addr) {
+    int err;
+    struct icmp_echo_hdr *iecho;
+    struct sockaddr_storage to;
+    size_t ping_size = sizeof(struct icmp_echo_hdr) + PING_DATA_SIZE;
+    LWIP_ASSERT("ping_size is too big", ping_size <= 0xffff);
 #if LWIP_IPV6
 	if(IP_IS_V6(addr) && !ip6_addr_isipv4mappedipv6(ip_2_ip6(addr))) {
 		/* todo: support ICMP6 echo */
@@ -73,20 +69,20 @@ ping_send(int s, const ip_addr_t *addr)
 	}
 #endif /* LWIP_IPV6 */
 
-	iecho = (struct icmp_echo_hdr *)mem_malloc((mem_size_t)ping_size);
-	if (!iecho) {
-		return ERR_MEM;
-	}
+    iecho = (struct icmp_echo_hdr*) mem_malloc((mem_size_t) ping_size);
+    if (!iecho) {
+        return ERR_MEM;
+    }
 
-	ping_prepare_echo(iecho, (u16_t)ping_size);
+    ping_prepare_echo(iecho, (u16_t) ping_size);
 
 #if LWIP_IPV4
-	if(IP_IS_V4(addr)) {
-		struct sockaddr_in *to4 = (struct sockaddr_in*)&to;
-		to4->sin_len    = sizeof(to4);
-		to4->sin_family = AF_INET;
-		inet_addr_from_ip4addr(&to4->sin_addr, ip_2_ip4(addr));
-	}
+    if (IP_IS_V4(addr)) {
+        struct sockaddr_in *to4 = (struct sockaddr_in*) &to;
+        to4->sin_len = sizeof(to4);
+        to4->sin_family = AF_INET;
+        inet_addr_from_ip4addr(&to4->sin_addr, ip_2_ip4(addr));
+    }
 #endif /* LWIP_IPV4 */
 
 #if LWIP_IPV6
@@ -98,32 +94,32 @@ ping_send(int s, const ip_addr_t *addr)
 	}
 #endif /* LWIP_IPV6 */
 
-	err = lwip_sendto(s, iecho, ping_size, 0, (struct sockaddr*)&to, sizeof(to));
+    err = lwip_sendto(s, iecho, ping_size, 0, (struct sockaddr*) &to,
+            sizeof(to));
 
-	mem_free(iecho);
+    mem_free(iecho);
 
-	return (err ? ERR_OK : ERR_VAL);
+    return (err ? ERR_OK : ERR_VAL);
 }
 
-static void
-ping_recv(int s, ping_result_t* res)
-{
-	char buf[64];
-	int len;
-	struct sockaddr_storage from;
-	int fromlen = sizeof(from);
+static void ping_recv(int s, ping_result_t *res) {
+    char buf[64];
+    int len;
+    struct sockaddr_storage from;
+    int fromlen = sizeof(from);
 
-	while((len = lwip_recvfrom(s, buf, sizeof(buf), 0, (struct sockaddr*)&from, (socklen_t*)&fromlen)) > 0) {
-		if (len >= (int)(sizeof(struct ip_hdr)+sizeof(struct icmp_echo_hdr))) {
-			ip_addr_t fromaddr;
-			memset(&fromaddr, 0, sizeof(fromaddr));
+    while ((len = lwip_recvfrom(s, buf, sizeof(buf), 0,
+            (struct sockaddr*) &from, (socklen_t*) &fromlen)) > 0) {
+        if (len
+                >= (int) (sizeof(struct ip_hdr) + sizeof(struct icmp_echo_hdr))) {
+            ip_addr_t fromaddr;
+            memset(&fromaddr, 0, sizeof(fromaddr));
 
 #if LWIP_IPV4
-			if(from.ss_family == AF_INET) {
-				struct sockaddr_in *from4 = (struct sockaddr_in*)&from;
-				inet_addr_to_ip4addr(ip_2_ip4(&fromaddr), &from4->sin_addr);
-				IP_SET_TYPE_VAL(fromaddr, IPADDR_TYPE_V4);
-			}
+            if (from.ss_family == AF_INET) {
+                struct sockaddr_in *from4 = (struct sockaddr_in*) &from;
+                inet_addr_to_ip4addr(ip_2_ip4(&fromaddr), &from4->sin_addr);IP_SET_TYPE_VAL(fromaddr, IPADDR_TYPE_V4);
+            }
 #endif /* LWIP_IPV4 */
 
 #if LWIP_IPV6
@@ -134,74 +130,72 @@ ping_recv(int s, ping_result_t* res)
 			}
 #endif /* LWIP_IPV6 */
 
-			//received something.
-			res->response_time_ms = sys_now() - res->response_time_ms;
-			res->response_ip = fromaddr;
+            //received something.
+            res->response_time_ms = sys_now() - res->response_time_ms;
+            res->response_ip = fromaddr;
 
-			/*printf("ping: recv %s %u ms\n",
-					ipaddr_ntoa(&fromaddr),
-					res->response_time_ms);*/
+            /*printf("ping: recv %s %u ms\n",
+             ipaddr_ntoa(&fromaddr),
+             res->response_time_ms);*/
 
-			/* todo: support ICMP6 echo */
+            /* todo: support ICMP6 echo */
 #if LWIP_IPV4
-			if (IP_IS_V4_VAL(fromaddr)) {
-				struct ip_hdr *iphdr;
-				struct icmp_echo_hdr *iecho;
+            if (IP_IS_V4_VAL(fromaddr)) {
+                struct ip_hdr *iphdr;
+                struct icmp_echo_hdr *iecho;
 
-				iphdr = (struct ip_hdr *)buf;
-				iecho = (struct icmp_echo_hdr *)(buf + (IPH_HL(iphdr) * 4));
-				if ((iecho->id == PING_ID) && (iecho->seqno == lwip_htons(ping_seq_num))) {
-					/* do some ping result processing */
-					switch(ICMPH_TYPE(iecho)) {
-					case ICMP_ER:
-						res->result_code = PING_RES_ECHO_REPLY;
-						break;
-					case ICMP_DUR:
-						res->result_code = PING_RES_DESTINATION_UNREACHABLE;
-						break;
-					case ICMP_TE:
-						res->result_code = PING_RES_TIME_EXCEEDED;
-						//iecho->code has more info
-						break;
-					default:
-						res->result_code = PING_RES_UNHANDLED_ICMP_CODE;
-						break;
-					}
-					return;
-				} else {
-					res->result_code = PING_RES_ID_OR_SEQNUM_MISMATCH;
-				}
-			}
+                iphdr = (struct ip_hdr*) buf;
+                iecho = (struct icmp_echo_hdr*) (buf + (IPH_HL(iphdr) * 4));
+                if ((iecho->id == PING_ID)
+                        && (iecho->seqno == lwip_htons(ping_seq_num))) {
+                    /* do some ping result processing */
+                    switch (ICMPH_TYPE(iecho)) {
+                    case ICMP_ER:
+                        res->result_code = PING_RES_ECHO_REPLY;
+                        break;
+                    case ICMP_DUR:
+                        res->result_code = PING_RES_DESTINATION_UNREACHABLE;
+                        break;
+                    case ICMP_TE:
+                        res->result_code = PING_RES_TIME_EXCEEDED;
+                        //iecho->code has more info
+                        break;
+                    default:
+                        res->result_code = PING_RES_UNHANDLED_ICMP_CODE;
+                        break;
+                    }
+                    return;
+                } else {
+                    res->result_code = PING_RES_ID_OR_SEQNUM_MISMATCH;
+                }
+            }
 #endif /* LWIP_IPV4 */
-		}
-		fromlen = sizeof(from);
-	}
+        }
+        fromlen = sizeof(from);
+    }
 
-	if (len == 0) {
-		//timeout
-		res->response_time_ms = UINT32_MAX;
-		res->result_code = PING_RES_TIMEOUT;
-	}
+    if (len == 0) {
+        //timeout
+        res->response_time_ms = UINT32_MAX;
+        res->result_code = PING_RES_TIMEOUT;
+    }
 }
 
+void ping_ip(ip_addr_t ping_target, ping_result_t *res) {
+    int s;
+    int ret;
+    err_t err;
 
-void
-ping_ip(ip_addr_t ping_target, ping_result_t* res)
-{
-	int s;
-	int ret;
-	err_t err;
-
-	if(res == NULL) {
-		return;
-	}
+    if (res == NULL) {
+        return;
+    }
 
 #if LWIP_SO_SNDRCVTIMEO_NONSTANDARD
 	int timeout = PING_RCV_TIMEO;
 #else
-	struct timeval timeout;
-	timeout.tv_sec = PING_RCV_TIMEO/1000;
-	timeout.tv_usec = (PING_RCV_TIMEO%1000)*1000;
+    struct timeval timeout;
+    timeout.tv_sec = PING_RCV_TIMEO / 1000;
+    timeout.tv_usec = (PING_RCV_TIMEO % 1000) * 1000;
 #endif
 
 #if LWIP_IPV6
@@ -211,33 +205,34 @@ ping_ip(ip_addr_t ping_target, ping_result_t* res)
 		s = lwip_socket(AF_INET6, SOCK_RAW, IP6_NEXTH_ICMP6);
 	}
 #else
-	fflush(stdout);
-	s = lwip_socket(AF_INET,  SOCK_RAW, IP_PROTO_ICMP);
+    fflush(stdout);
+    s = lwip_socket(AF_INET, SOCK_RAW, IP_PROTO_ICMP);
 
-	fflush(stdout);
+    fflush(stdout);
 
 #endif
-	if (s < 0) {
-		res->result_code = PING_RES_ERR_NO_SOCKET;
-		return;
-	}
+    if (s < 0) {
+        res->result_code = PING_RES_ERR_NO_SOCKET;
+        return;
+    }
 
-	ret = lwip_setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-	LWIP_ASSERT("setting receive timeout failed", ret == 0);
-	LWIP_UNUSED_ARG(ret);
+    ret = lwip_setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &timeout,
+            sizeof(timeout));
+    LWIP_ASSERT("setting receive timeout failed", ret == 0);
+    LWIP_UNUSED_ARG(ret);
 
-	if ((err = ping_send(s, &ping_target)) == ERR_OK) {
-		//modified later
-		res->response_time_ms = sys_now();
-		ping_recv(s, res);
-	} else {
-		if(err == ERR_VAL) {
-			res->result_code = PING_RES_ERR_SENDING;
-		} else if(err == ERR_MEM){
-			res->result_code = PING_RES_NO_MEM;
-		} else if(err == ERR_VAL) {
-			res->result_code = PING_RES_ERR_SENDING;
-		}
-	}
-	lwip_close(s);
+    if ((err = ping_send(s, &ping_target)) == ERR_OK) {
+        //modified later
+        res->response_time_ms = sys_now();
+        ping_recv(s, res);
+    } else {
+        if (err == ERR_VAL) {
+            res->result_code = PING_RES_ERR_SENDING;
+        } else if (err == ERR_MEM) {
+            res->result_code = PING_RES_NO_MEM;
+        } else if (err == ERR_VAL) {
+            res->result_code = PING_RES_ERR_SENDING;
+        }
+    }
+    lwip_close(s);
 }
