@@ -5,7 +5,7 @@ A simple example for how to ping a host using lwIP and esp-open-rtos
 
 ## Compilation
 
-CLone https://github.com/SuperHouse/esp-open-rtos/, create a new folder `ping_app` in the `examples/` folder, then execute `make` and `make flash` as normal. 
+CLone https://github.com/SuperHouse/esp-open-rtos/, create a new folder `ping_app` in the `examples/` folder, copy the contents of this repository in it, then execute `make` and `make flash` as normal. 
 
 ## lwIP configuratoin
 
